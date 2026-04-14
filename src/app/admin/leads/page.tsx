@@ -24,8 +24,6 @@ type Lead = {
   company_name: string;
   contact_person: string;
   whatsapp: string;
-  device_id: string | null;
-  user_agent: string | null;
   owner: string | null;
   notes: string | null;
   last_contacted_at: string | null;
@@ -49,17 +47,6 @@ const industryLabels: Record<string, string> = {
   agriculture: "Agriculture",
   cleaning: "Cleaning",
 };
-
-function parseDeviceType(userAgent: string | null): string {
-  if (!userAgent) return "Unknown";
-  const ua = userAgent.toLowerCase();
-  if (ua.includes("iphone") || ua.includes("ipad") || ua.includes("ios")) return "iPhone/iPad";
-  if (ua.includes("android")) return "Android";
-  if (ua.includes("windows")) return "Windows";
-  if (ua.includes("mac os") || ua.includes("macintosh")) return "Mac";
-  if (ua.includes("linux")) return "Linux";
-  return "Other";
-}
 
 function csvEscape(value: string | number | null | undefined) {
   const v = String(value ?? "");
@@ -130,8 +117,7 @@ export default function AdminLeadsPage() {
         return (
           l.company_name.toLowerCase().includes(normalizedQuery) ||
           l.contact_person.toLowerCase().includes(normalizedQuery) ||
-          l.whatsapp.toLowerCase().includes(normalizedQuery) ||
-          (l.device_id ?? "").toLowerCase().includes(normalizedQuery)
+          l.whatsapp.toLowerCase().includes(normalizedQuery)
         );
       }),
     [leads, filterIndustry, filterStatus, filterOwner, normalizedQuery]
@@ -198,11 +184,11 @@ export default function AdminLeadsPage() {
   function handleExportCsv() {
     const headers = [
       "lead_no","company_name","contact_person","industry","estimated_quota","whatsapp",
-      "device_type","device_id","owner","notes","last_contacted_at","status","created_at",
+      "owner","notes","last_contacted_at","status","created_at",
     ];
     const rows = filtered.map((l) => [
       l.lead_no, l.company_name, l.contact_person, l.industry, l.estimated_quota, l.whatsapp,
-      parseDeviceType(l.user_agent), l.device_id, l.owner, l.notes, l.last_contacted_at, l.status, l.created_at,
+      l.owner, l.notes, l.last_contacted_at, l.status, l.created_at,
     ]);
     const csv = [headers.join(","), ...rows.map((row) => row.map((cell) => csvEscape(cell)).join(","))].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -325,7 +311,7 @@ export default function AdminLeadsPage() {
         <Input
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search company, contact, phone, device..."
+          placeholder="Search company, contact, phone..."
           className="h-8 max-w-xs"
         />
         <Button variant="outline" size="sm" className="h-8" onClick={handleExportCsv} disabled={filtered.length === 0}>
@@ -339,16 +325,16 @@ export default function AdminLeadsPage() {
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10 bg-background">
               <tr className="border-b bg-muted/95 backdrop-blur">
-                {["No.","Company","Contact","Industry","Quota","WhatsApp","Device","Device ID","Owner","Notes","Last Contacted","Status","Date"].map((h) => (
+                {["No.","Company","Contact","Industry","Quota","WhatsApp","Owner","Notes","Last Contacted","Status","Date"].map((h) => (
                   <th key={h} className="text-left font-medium px-4 py-3">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={13} className="text-center py-12 text-muted-foreground">Loading...</td></tr>
+                <tr><td colSpan={11} className="text-center py-12 text-muted-foreground">Loading...</td></tr>
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={13} className="text-center py-12 text-muted-foreground">No leads found</td></tr>
+                <tr><td colSpan={11} className="text-center py-12 text-muted-foreground">No leads found</td></tr>
               ) : (
                 pagedRows.map((lead) => (
                   <tr key={lead.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
@@ -358,8 +344,6 @@ export default function AdminLeadsPage() {
                     <td className="px-4 py-3"><span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs font-medium">{industryLabels[lead.industry] || lead.industry}</span></td>
                     <td className="px-4 py-3 tabular-nums font-medium">{lead.estimated_quota}</td>
                     <td className="px-4 py-3 tabular-nums">{lead.whatsapp}</td>
-                    <td className="px-4 py-3"><span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs font-medium">{parseDeviceType(lead.user_agent)}</span></td>
-                    <td className="px-4 py-3 text-xs font-mono text-muted-foreground max-w-[180px] truncate">{lead.device_id ?? "—"}</td>
                     <td className="px-4 py-3 min-w-[140px]">
                       <Input value={drafts[lead.id]?.owner ?? lead.owner ?? ""} placeholder="Assign owner" className="h-8 text-xs" onChange={(e) => handleDraftChange(lead.id, "owner", e.currentTarget.value)} />
                       <p className="mt-1 text-[10px] text-muted-foreground">
