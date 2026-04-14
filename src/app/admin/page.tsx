@@ -21,7 +21,12 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { getLeads, updateLeadFollowUp, updateLeadStatus } from "./actions";
+import {
+  getLeadEvents,
+  getLeads,
+  updateLeadFollowUp,
+  updateLeadStatus,
+} from "./actions";
 
 type Lead = {
   id: string;
@@ -38,6 +43,16 @@ type Lead = {
   notes: string | null;
   last_contacted_at: string | null;
   status: string;
+  created_at: string;
+};
+
+type LeadEvent = {
+  id: string;
+  lead_id: string;
+  lead_no: number | null;
+  event_type: string;
+  event_detail: string | null;
+  actor: string | null;
   created_at: string;
 };
 
@@ -103,8 +118,10 @@ export default function AdminPage() {
   const [filterIndustry, setFilterIndustry] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterOwner, setFilterOwner] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
+  const [events, setEvents] = useState<LeadEvent[]>([]);
   const [drafts, setDrafts] = useState<
     Record<string, { owner: string; notes: string }>
   >({});
@@ -115,8 +132,9 @@ export default function AdminPage() {
 
   const fetchLeads = useCallback(async () => {
     setLoading(true);
-    const data = await getLeads();
+    const [data, evts] = await Promise.all([getLeads(), getLeadEvents(25)]);
     setLeads(data);
+    setEvents(evts);
     setLoading(false);
   }, []);
 
@@ -163,7 +181,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterIndustry, filterStatus, searchQuery]);
+  }, [filterIndustry, filterStatus, filterOwner, searchQuery]);
 
   async function handleStatusChange(id: string, status: string) {
     await updateLeadStatus(id, status);
@@ -282,6 +300,7 @@ export default function AdminPage() {
   const filtered = leads.filter((l) => {
     if (filterIndustry !== "all" && l.industry !== filterIndustry) return false;
     if (filterStatus !== "all" && l.status !== filterStatus) return false;
+    if (filterOwner !== "all" && (l.owner ?? "") !== filterOwner) return false;
     if (!normalizedQuery) return true;
     return (
       l.company_name.toLowerCase().includes(normalizedQuery) ||
@@ -308,6 +327,9 @@ export default function AdminPage() {
   const topIndustry =
     Object.entries(industryCount).sort(([, a], [, b]) => b - a)[0]?.[0] ||
     "—";
+  const ownerOptions = Array.from(
+    new Set(leads.map((l) => (l.owner ?? "").trim()).filter(Boolean))
+  ).sort((a, b) => a.localeCompare(b));
 
   const newCount = filtered.filter((l) => l.status === "new").length;
   const contactedCount = filtered.filter((l) => l.status === "contacted").length;
@@ -494,6 +516,19 @@ export default function AdminPage() {
               {statusOptions.map((s) => (
                 <SelectItem key={s} value={s}>
                   {s.charAt(0).toUpperCase() + s.slice(1)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={filterOwner} onValueChange={setFilterOwner}>
+            <SelectTrigger className="w-40" size="sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Owners</SelectItem>
+              {ownerOptions.map((owner) => (
+                <SelectItem key={owner} value={owner}>
+                  {owner}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -697,6 +732,38 @@ export default function AdminPage() {
             </Button>
           </div>
         </div>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Lead Activity</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {events.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No activity yet.</p>
+            ) : (
+              events.slice(0, 10).map((e) => (
+                <div key={e.id} className="rounded-md border p-3 text-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-medium">
+                      Lead #{e.lead_no ?? "?"} - {e.event_type}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(e.created_at).toLocaleString("en-MY", {
+                        day: "2-digit",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {e.event_detail ?? "No detail"} by {e.actor ?? "system"}
+                  </p>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
       </main>
     </div>
   );
