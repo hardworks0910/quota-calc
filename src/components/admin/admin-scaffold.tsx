@@ -3,7 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowLeft, PanelLeftClose, PanelLeftOpen, RefreshCw } from "lucide-react";
+import {
+  Activity,
+  ArrowLeft,
+  LayoutDashboard,
+  PanelLeftClose,
+  PanelLeftOpen,
+  RefreshCw,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -16,8 +23,8 @@ type AdminScaffoldProps = {
 };
 
 const navItems = [
-  { href: "/admin/leads", label: "Dashboard" },
-  { href: "/admin/activity", label: "Activity" },
+  { href: "/admin/leads", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/activity", label: "Activity", icon: Activity },
 ];
 
 export function AdminScaffold({
@@ -153,12 +160,15 @@ export function AdminScaffold({
           <aside className="hidden lg:block">
             <Card className="sticky top-20">
               <CardHeader className="pb-3">
-                <div className="flex items-center justify-between gap-2">
+                <div
+                  className={cn(
+                    "flex items-center gap-2",
+                    sidebarCollapsed ? "justify-center" : "justify-between"
+                  )}
+                >
                   {!sidebarCollapsed ? (
                     <CardTitle className="text-sm">Navigation</CardTitle>
-                  ) : (
-                    <CardTitle className="text-sm">Nav</CardTitle>
-                  )}
+                  ) : null}
                   <Button
                     variant="ghost"
                     size="icon"
@@ -183,11 +193,14 @@ export function AdminScaffold({
                       pathname === item.href
                         ? "bg-muted border-foreground/20 font-medium"
                         : "hover:bg-muted/40",
-                      sidebarCollapsed && "px-2 text-center"
+                      sidebarCollapsed
+                        ? "px-0 h-9 flex items-center justify-center"
+                        : "flex items-center gap-2"
                     )}
                     title={item.label}
                   >
-                    {sidebarCollapsed ? item.label.charAt(0) : item.label}
+                    <item.icon className="h-4 w-4 shrink-0" />
+                    {!sidebarCollapsed ? item.label : null}
                   </Link>
                 ))}
               </CardContent>
