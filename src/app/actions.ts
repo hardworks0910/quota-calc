@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { leadSchema } from "@/lib/schemas";
 import type { IndustryId } from "@/lib/schemas";
 
@@ -10,6 +11,7 @@ type SubmitLeadPayload = {
   companyName: string;
   contactPerson: string;
   whatsapp: string;
+  deviceId?: string;
 };
 
 export async function submitLead(payload: SubmitLeadPayload) {
@@ -25,6 +27,7 @@ export async function submitLead(payload: SubmitLeadPayload) {
 
   try {
     const { supabase } = await import("@/db");
+    const ua = (await headers()).get("user-agent");
 
     const { error } = await supabase.from("leads").insert({
       industry: payload.industry,
@@ -33,6 +36,8 @@ export async function submitLead(payload: SubmitLeadPayload) {
       company_name: parsed.data.companyName,
       contact_person: parsed.data.contactPerson,
       whatsapp: parsed.data.whatsapp,
+      device_id: payload.deviceId ?? null,
+      user_agent: ua ?? null,
       status: "new",
     });
 

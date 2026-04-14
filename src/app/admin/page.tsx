@@ -30,6 +30,8 @@ type Lead = {
   company_name: string;
   contact_person: string;
   whatsapp: string;
+  device_id: string | null;
+  user_agent: string | null;
   status: string;
   created_at: string;
 };
@@ -52,6 +54,27 @@ const industryLabels: Record<string, string> = {
   agriculture: "Agriculture",
   cleaning: "Cleaning",
 };
+
+function parseDeviceType(userAgent: string | null): string {
+  if (!userAgent) return "Unknown";
+  const ua = userAgent.toLowerCase();
+  if (ua.includes("iphone") || ua.includes("ipad") || ua.includes("ios")) {
+    return "iPhone/iPad";
+  }
+  if (ua.includes("android")) {
+    return "Android";
+  }
+  if (ua.includes("windows")) {
+    return "Windows";
+  }
+  if (ua.includes("mac os") || ua.includes("macintosh")) {
+    return "Mac";
+  }
+  if (ua.includes("linux")) {
+    return "Linux";
+  }
+  return "Other";
+}
 
 export default function AdminPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -232,6 +255,8 @@ export default function AdminPage() {
                   <th className="text-left font-medium px-4 py-3">Industry</th>
                   <th className="text-left font-medium px-4 py-3">Quota</th>
                   <th className="text-left font-medium px-4 py-3">WhatsApp</th>
+                  <th className="text-left font-medium px-4 py-3">Device</th>
+                  <th className="text-left font-medium px-4 py-3">Device ID</th>
                   <th className="text-left font-medium px-4 py-3">Status</th>
                   <th className="text-left font-medium px-4 py-3">Date</th>
                 </tr>
@@ -239,13 +264,13 @@ export default function AdminPage() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={8} className="text-center py-12 text-muted-foreground">
+                    <td colSpan={10} className="text-center py-12 text-muted-foreground">
                       Loading...
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="text-center py-12 text-muted-foreground">
+                    <td colSpan={10} className="text-center py-12 text-muted-foreground">
                       No leads found
                     </td>
                   </tr>
@@ -269,6 +294,14 @@ export default function AdminPage() {
                       </td>
                       <td className="px-4 py-3 tabular-nums">
                         {lead.whatsapp}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs font-medium">
+                          {parseDeviceType(lead.user_agent)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-xs font-mono text-muted-foreground max-w-[180px] truncate">
+                        {lead.device_id ?? "—"}
                       </td>
                       <td className="px-4 py-3">
                         <Select

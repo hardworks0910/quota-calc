@@ -17,6 +17,8 @@ export const leads = pgTable("leads", {
   companyName: varchar("company_name", { length: 255 }).notNull(),
   contactPerson: varchar("contact_person", { length: 255 }).notNull(),
   whatsapp: varchar("whatsapp", { length: 30 }).notNull(),
+  deviceId: varchar("device_id", { length: 100 }),
+  userAgent: varchar("user_agent", { length: 2048 }),
   status: varchar("status", { length: 30 }).default("new").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

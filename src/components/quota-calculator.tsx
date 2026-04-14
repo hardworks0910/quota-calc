@@ -62,6 +62,20 @@ const schemaMap = {
 
 type Step = "industry" | "calculate" | "result" | "lead" | "success";
 
+function getOrCreateDeviceId(): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  const key = "quota_calc_device_id";
+  const existing = window.localStorage.getItem(key);
+  if (existing) return existing;
+
+  const generated =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `dev_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+  window.localStorage.setItem(key, generated);
+  return generated;
+}
+
 export function QuotaCalculator() {
   const [step, setStep] = useState<Step>("industry");
   const [selectedIndustry, setSelectedIndustry] = useState<IndustryId | null>(
@@ -94,6 +108,7 @@ export function QuotaCalculator() {
         industry: selectedIndustry!,
         calculationData: calcData as unknown as Record<string, unknown>,
         estimatedQuota: quota,
+        deviceId: getOrCreateDeviceId(),
         ...data,
       });
       if (result.success) {
