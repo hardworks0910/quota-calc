@@ -131,12 +131,15 @@ export default function AdminPage() {
   >({});
   const saveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
-  const fetchLeads = useCallback(async () => {
-    setLoading(true);
-    const [data, evts] = await Promise.all([getLeads(), getLeadEvents(25)]);
-    setLeads(data);
-    setEvents(evts);
-    setLoading(false);
+  const fetchLeads = useCallback(async (showLoading = true) => {
+    try {
+      if (showLoading) setLoading(true);
+      const [data, evts] = await Promise.all([getLeads(), getLeadEvents(25)]);
+      setLeads(data);
+      setEvents(evts);
+    } finally {
+      if (showLoading) setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -146,7 +149,6 @@ export default function AdminPage() {
         const data = (await res.json()) as { authed?: boolean };
         if (data.authed) {
           setAuthed(true);
-          fetchLeads();
         }
       } finally {
         setLoading(false);
@@ -195,7 +197,7 @@ export default function AdminPage() {
     setLeads((prev) =>
       prev.map((l) => (l.id === id ? { ...l, status } : l))
     );
-    await fetchLeads();
+    await fetchLeads(false);
   }
 
   async function handleFollowUpSave(id: string, owner: string, notes: string) {
@@ -204,7 +206,7 @@ export default function AdminPage() {
     setLeads((prev) =>
       prev.map((l) => (l.id === id ? { ...l, owner, notes } : l))
     );
-    await fetchLeads();
+    await fetchLeads(false);
   }
 
   async function handleMarkContactedNow(id: string) {
@@ -214,7 +216,7 @@ export default function AdminPage() {
     setLeads((prev) =>
       prev.map((l) => (l.id === id ? { ...l, last_contacted_at: now } : l))
     );
-    await fetchLeads();
+    await fetchLeads(false);
   }
 
   function queueAutoSave(id: string, nextDraft: { owner: string; notes: string }) {
@@ -235,7 +237,7 @@ export default function AdminPage() {
             : l
         )
       );
-      await fetchLeads();
+      await fetchLeads(false);
       setSaveState((prev) => ({ ...prev, [id]: "saved" }));
       setTimeout(() => {
         setSaveState((prev) => ({ ...prev, [id]: "idle" }));
@@ -415,7 +417,7 @@ export default function AdminPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={fetchLeads}
+            onClick={() => fetchLeads(true)}
             disabled={loading}
           >
             <RefreshCw
