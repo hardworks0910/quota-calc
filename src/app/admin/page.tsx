@@ -122,6 +122,7 @@ export default function AdminPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
   const [events, setEvents] = useState<LeadEvent[]>([]);
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<
     Record<string, { owner: string; notes: string }>
   >({});
@@ -182,6 +183,12 @@ export default function AdminPage() {
   useEffect(() => {
     setCurrentPage(1);
   }, [filterIndustry, filterStatus, filterOwner, searchQuery]);
+
+  useEffect(() => {
+    if (!selectedLeadId) return;
+    const stillExists = leads.some((l) => l.id === selectedLeadId);
+    if (!stillExists) setSelectedLeadId(null);
+  }, [leads, selectedLeadId]);
 
   async function handleStatusChange(id: string, status: string) {
     await updateLeadStatus(id, status);
@@ -330,6 +337,10 @@ export default function AdminPage() {
   const ownerOptions = Array.from(
     new Set(leads.map((l) => (l.owner ?? "").trim()).filter(Boolean))
   ).sort((a, b) => a.localeCompare(b));
+  const selectedLead = leads.find((l) => l.id === selectedLeadId) ?? null;
+  const timelineRows = selectedLeadId
+    ? events.filter((e) => e.lead_id === selectedLeadId)
+    : events;
 
   const newCount = filtered.filter((l) => l.status === "new").length;
   const contactedCount = filtered.filter((l) => l.status === "contacted").length;
@@ -590,7 +601,14 @@ export default function AdminPage() {
                   </tr>
                 ) : (
                   pagedRows.map((lead) => (
-                    <tr key={lead.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+                    <tr
+                      key={lead.id}
+                      className={cn(
+                        "border-b last:border-0 hover:bg-muted/30 transition-colors cursor-pointer",
+                        selectedLeadId === lead.id && "bg-muted/40"
+                      )}
+                      onClick={() => setSelectedLeadId(lead.id)}
+                    >
                       <td className="px-4 py-3 tabular-nums font-semibold">
                         {lead.lead_no}
                       </td>
@@ -622,6 +640,7 @@ export default function AdminPage() {
                           value={drafts[lead.id]?.owner ?? lead.owner ?? ""}
                           placeholder="Assign owner"
                           className="h-8 text-xs"
+                          onClick={(e) => e.stopPropagation()}
                           onChange={(e) =>
                             handleDraftChange(lead.id, "owner", e.currentTarget.value)
                           }
@@ -637,6 +656,7 @@ export default function AdminPage() {
                           value={drafts[lead.id]?.notes ?? lead.notes ?? ""}
                           placeholder="Add note..."
                           className="h-8 text-xs"
+                          onClick={(e) => e.stopPropagation()}
                           onChange={(e) =>
                             handleDraftChange(lead.id, "notes", e.currentTarget.value)
                           }
@@ -658,7 +678,10 @@ export default function AdminPage() {
                             size="sm"
                             variant="outline"
                             className="h-6 px-2 text-[10px]"
-                            onClick={() => handleMarkContactedNow(lead.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMarkContactedNow(lead.id);
+                            }}
                           >
                             Mark now
                           </Button>
@@ -673,6 +696,7 @@ export default function AdminPage() {
                         >
                           <SelectTrigger
                             size="sm"
+                            onClick={(e) => e.stopPropagation()}
                             className={cn(
                               "w-28 h-7 text-xs border-0",
                               statusColors[lead.status]
@@ -735,13 +759,28 @@ export default function AdminPage() {
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Lead Activity</CardTitle>
+            <div className="flex items-center justify-between gap-3">
+              <CardTitle className="text-base">
+                Lead Activity
+                {selectedLead ? ` - #${selectedLead.lead_no}` : ""}
+              </CardTitle>
+              {selectedLeadId ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  onClick={() => setSelectedLeadId(null)}
+                >
+                  Clear selection
+                </Button>
+              ) : null}
+            </div>
           </CardHeader>
           <CardContent className="space-y-2">
-            {events.length === 0 ? (
+            {timelineRows.length === 0 ? (
               <p className="text-sm text-muted-foreground">No activity yet.</p>
             ) : (
-              events.slice(0, 10).map((e) => (
+              timelineRows.slice(0, 10).map((e) => (
                 <div key={e.id} className="rounded-md border p-3 text-sm">
                   <div className="flex items-center justify-between gap-3">
                     <p className="font-medium">
