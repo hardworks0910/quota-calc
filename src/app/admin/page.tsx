@@ -195,6 +195,7 @@ export default function AdminPage() {
     setLeads((prev) =>
       prev.map((l) => (l.id === id ? { ...l, status } : l))
     );
+    await fetchLeads();
   }
 
   async function handleFollowUpSave(id: string, owner: string, notes: string) {
@@ -203,6 +204,7 @@ export default function AdminPage() {
     setLeads((prev) =>
       prev.map((l) => (l.id === id ? { ...l, owner, notes } : l))
     );
+    await fetchLeads();
   }
 
   async function handleMarkContactedNow(id: string) {
@@ -212,6 +214,7 @@ export default function AdminPage() {
     setLeads((prev) =>
       prev.map((l) => (l.id === id ? { ...l, last_contacted_at: now } : l))
     );
+    await fetchLeads();
   }
 
   function queueAutoSave(id: string, nextDraft: { owner: string; notes: string }) {
@@ -232,6 +235,7 @@ export default function AdminPage() {
             : l
         )
       );
+      await fetchLeads();
       setSaveState((prev) => ({ ...prev, [id]: "saved" }));
       setTimeout(() => {
         setSaveState((prev) => ({ ...prev, [id]: "idle" }));

@@ -49,17 +49,21 @@ export async function submitLead(payload: SubmitLeadPayload) {
       }
     }
 
-    const { error } = await supabase.from("leads").insert({
-      industry: payload.industry,
-      calculation_data: payload.calculationData,
-      estimated_quota: payload.estimatedQuota,
-      company_name: parsed.data.companyName,
-      contact_person: parsed.data.contactPerson,
-      whatsapp: parsed.data.whatsapp,
-      device_id: payload.deviceId ?? null,
-      user_agent: ua ?? null,
-      status: "new",
-    });
+    const { data: insertedRows, error } = await supabase
+      .from("leads")
+      .insert({
+        industry: payload.industry,
+        calculation_data: payload.calculationData,
+        estimated_quota: payload.estimatedQuota,
+        company_name: parsed.data.companyName,
+        contact_person: parsed.data.contactPerson,
+        whatsapp: parsed.data.whatsapp,
+        device_id: payload.deviceId ?? null,
+        user_agent: ua ?? null,
+        status: "new",
+      })
+      .select("id, lead_no")
+      .limit(1);
 
     if (error) {
       console.error("Supabase insert error:", error);
@@ -67,6 +71,20 @@ export async function submitLead(payload: SubmitLeadPayload) {
         success: false as const,
         error: { _form: [error.message] },
       };
+    }
+
+    const insertedLead = insertedRows?.[0];
+    if (insertedLead?.id) {
+      const { error: eventError } = await supabase.from("lead_events").insert({
+        lead_id: insertedLead.id,
+        lead_no: insertedLead.lead_no ?? null,
+        event_type: "lead_created",
+        event_detail: "lead created from landing page form",
+        actor: "system",
+      });
+      if (eventError) {
+        console.error("Supabase lead_created event error:", eventError);
+      }
     }
 
     // Best-effort notification; lead insert remains source of truth.

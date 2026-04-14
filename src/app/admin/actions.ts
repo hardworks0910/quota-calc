@@ -45,13 +45,16 @@ export async function updateLeadStatus(id: string, status: string) {
     return { success: false };
   }
 
-  void supabase.from("lead_events").insert({
+  const { error: eventError } = await supabase.from("lead_events").insert({
     lead_id: id,
     lead_no: before?.lead_no ?? null,
     event_type: "status_changed",
     event_detail: `status: ${before?.status ?? "unknown"} -> ${status}`,
     actor: "admin",
   });
+  if (eventError) {
+    console.error("Failed to insert lead status event:", eventError);
+  }
 
   return { success: true };
 }
@@ -99,13 +102,16 @@ export async function updateLeadFollowUp(
   }
 
   if (details.length > 0) {
-    void supabase.from("lead_events").insert({
+    const { error: eventError } = await supabase.from("lead_events").insert({
       lead_id: id,
       lead_no: before?.lead_no ?? null,
       event_type: "followup_updated",
       event_detail: details.join("; "),
       actor: "admin",
     });
+    if (eventError) {
+      console.error("Failed to insert lead follow-up event:", eventError);
+    }
   }
 
   return { success: true };
