@@ -189,7 +189,7 @@ export function AdminScaffold({
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      "block rounded-md border px-3 py-2 text-xs",
+                      "group relative block rounded-md border px-3 py-2 text-xs",
                       pathname === item.href
                         ? "bg-muted border-foreground/20 font-medium"
                         : "hover:bg-muted/40",
@@ -199,8 +199,16 @@ export function AdminScaffold({
                     )}
                     title={item.label}
                   >
+                    {pathname === item.href ? (
+                      <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r bg-foreground/60" />
+                    ) : null}
                     <item.icon className="h-4 w-4 shrink-0" />
                     {!sidebarCollapsed ? item.label : null}
+                    {sidebarCollapsed ? (
+                      <span className="pointer-events-none absolute left-full top-1/2 ml-2 -translate-y-1/2 whitespace-nowrap rounded-md border bg-background px-2 py-1 text-[11px] opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
+                        {item.label}
+                      </span>
+                    ) : null}
                   </Link>
                 ))}
               </CardContent>
