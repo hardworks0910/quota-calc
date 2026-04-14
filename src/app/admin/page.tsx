@@ -133,6 +133,10 @@ export default function AdminPage() {
     if (authed) fetchLeads();
   }, [authed, fetchLeads]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterIndustry, filterStatus, searchQuery]);
+
   async function handleStatusChange(id: string, status: string) {
     await updateLeadStatus(id, status);
     setLeads((prev) =>
@@ -218,7 +222,8 @@ export default function AdminPage() {
     );
   });
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const start = (currentPage - 1) * pageSize;
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const start = (safeCurrentPage - 1) * pageSize;
   const pagedRows = filtered.slice(start, start + pageSize);
 
   const totalLeads = leads.length;
@@ -234,16 +239,6 @@ export default function AdminPage() {
   const topIndustry =
     Object.entries(industryCount).sort(([, a], [, b]) => b - a)[0]?.[0] ||
     "—";
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filterIndustry, filterStatus, searchQuery]);
-
-  useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
-    }
-  }, [currentPage, totalPages]);
 
   const newCount = filtered.filter((l) => l.status === "new").length;
   const contactedCount = filtered.filter((l) => l.status === "contacted").length;
@@ -622,7 +617,7 @@ export default function AdminPage() {
               Prev
             </Button>
             <span className="text-xs text-muted-foreground">
-              Page {currentPage} / {totalPages}
+              Page {safeCurrentPage} / {totalPages}
             </span>
             <Button
               variant="outline"
@@ -630,7 +625,7 @@ export default function AdminPage() {
               onClick={() =>
                 setCurrentPage((p) => Math.min(totalPages, p + 1))
               }
-              disabled={currentPage === totalPages}
+              disabled={safeCurrentPage === totalPages}
             >
               Next
             </Button>
