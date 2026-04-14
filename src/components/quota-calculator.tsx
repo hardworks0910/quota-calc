@@ -26,6 +26,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/components/ui/toast";
+import { AnimatedCounter } from "@/components/animated-counter";
 
 import {
   industries,
@@ -68,6 +70,7 @@ export function QuotaCalculator() {
   const [calcData, setCalcData] = useState<CalculationInput | null>(null);
   const [quota, setQuota] = useState<number>(0);
   const [isPending, startTransition] = useTransition();
+  const { toast } = useToast();
 
   function handleSelectIndustry(id: IndustryId) {
     setSelectedIndustry(id);
@@ -95,6 +98,12 @@ export function QuotaCalculator() {
       });
       if (result.success) {
         setStep("success");
+        toast("Submission received! We'll contact you shortly.", "success");
+      } else {
+        const msg =
+          (result.error as Record<string, string[]>)?._form?.[0] ||
+          "Submission failed. Please try again.";
+        toast(msg, "error");
       }
     });
   }
@@ -108,7 +117,6 @@ export function QuotaCalculator() {
 
   return (
     <div className="w-full max-w-2xl mx-auto">
-      {/* Progress indicator */}
       <div className="flex items-center justify-center gap-2 mb-8">
         {(["industry", "calculate", "result", "lead"] as const).map(
           (s, idx) => (
@@ -258,10 +266,7 @@ function FnbForm({ onSubmit }: { onSubmit: (d: CalculationInput) => void }) {
     defaultValues: { localStaffCount: undefined as unknown as number },
   });
   return (
-    <form
-      onSubmit={handleSubmit((d) => onSubmit(d))}
-      className="space-y-4"
-    >
+    <form onSubmit={handleSubmit((d) => onSubmit(d))} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="localStaffCount">Local Full-Time Staff Count</Label>
         <Input
@@ -297,13 +302,12 @@ function ManufacturingForm({
     resolver: zodResolver(schemaMap.manufacturing),
   });
   return (
-    <form
-      onSubmit={handleSubmit((d) => onSubmit(d))}
-      className="space-y-4"
-    >
+    <form onSubmit={handleSubmit((d) => onSubmit(d))} className="space-y-4">
       <div className="space-y-2">
         <Label>Factory Scale</Label>
-        <Select onValueChange={(v) => setValue("factoryScale", v as "sme" | "mnc")}>
+        <Select
+          onValueChange={(v) => setValue("factoryScale", v as "sme" | "mnc")}
+        >
           <SelectTrigger>
             <SelectValue placeholder="Select factory scale" />
           </SelectTrigger>
@@ -356,10 +360,7 @@ function ConstructionForm({
   });
   const cidb = watch("cidbRegistered");
   return (
-    <form
-      onSubmit={handleSubmit((d) => onSubmit(d))}
-      className="space-y-4"
-    >
+    <form onSubmit={handleSubmit((d) => onSubmit(d))} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="projectValue">Total Project Value (RM)</Label>
         <Input
@@ -405,10 +406,7 @@ function AgricultureForm({
     defaultValues: { landSize: undefined as unknown as number },
   });
   return (
-    <form
-      onSubmit={handleSubmit((d) => onSubmit(d))}
-      className="space-y-4"
-    >
+    <form onSubmit={handleSubmit((d) => onSubmit(d))} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="landSize">Land Size (Acres)</Label>
         <Input
@@ -444,10 +442,7 @@ function CleaningForm({
     defaultValues: { contractValue: undefined as unknown as number },
   });
   return (
-    <form
-      onSubmit={handleSubmit((d) => onSubmit(d))}
-      className="space-y-4"
-    >
+    <form onSubmit={handleSubmit((d) => onSubmit(d))} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="contractValue">Annual Contract Value (RM)</Label>
         <Input
@@ -490,9 +485,10 @@ function QuotaResult({
           <p className="text-sm text-muted-foreground uppercase tracking-wider font-medium">
             {label} — Estimated Quota
           </p>
-          <p className="text-6xl font-bold tracking-tighter tabular-nums">
-            {quota}
-          </p>
+          <AnimatedCounter
+            value={quota}
+            className="text-6xl font-bold tracking-tighter tabular-nums block"
+          />
           <p className="text-sm text-muted-foreground">
             Foreign workers approved
           </p>
@@ -615,9 +611,11 @@ function LeadForm({
 
 function SuccessState({ onReset }: { onReset: () => void }) {
   return (
-    <Card className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
+    <Card className="animate-in fade-in-0 scale-in-95 duration-500">
       <CardContent className="pt-8 pb-8 text-center space-y-4">
-        <CheckCircle2 className="mx-auto h-12 w-12 text-foreground" />
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-lg bg-emerald-500/10">
+          <CheckCircle2 className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+        </div>
         <div className="space-y-1">
           <h3 className="text-xl font-semibold">Submission Received</h3>
           <p className="text-sm text-muted-foreground max-w-sm mx-auto">

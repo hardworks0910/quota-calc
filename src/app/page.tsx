@@ -140,15 +140,50 @@ function TrustSection() {
 
 function Footer() {
   return (
-    <footer className="border-t py-8">
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
-        <div className="flex items-center gap-2">
-          <div className="h-5 w-5 rounded-md bg-foreground" />
-          <span className="font-medium text-foreground">QuotaCalc</span>
+    <footer className="border-t py-10">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 text-sm">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="h-5 w-5 rounded-md bg-foreground" />
+              <span className="font-semibold text-foreground">QuotaCalc</span>
+            </div>
+            <p className="text-muted-foreground text-xs leading-relaxed">
+              Malaysia&apos;s trusted foreign worker quota calculator and
+              compliance advisory platform.
+            </p>
+          </div>
+          <div className="space-y-3">
+            <h4 className="font-medium text-xs uppercase tracking-wider text-muted-foreground">
+              Contact
+            </h4>
+            <ul className="space-y-1.5 text-xs text-muted-foreground">
+              <li>WhatsApp: +60 12-345 6789</li>
+              <li>Email: hello@quotacalc.my</li>
+              <li>Kuala Lumpur, Malaysia</li>
+            </ul>
+          </div>
+          <div className="space-y-3">
+            <h4 className="font-medium text-xs uppercase tracking-wider text-muted-foreground">
+              Links
+            </h4>
+            <ul className="space-y-1.5 text-xs text-muted-foreground">
+              <li>
+                <a href="#calculator" className="hover:text-foreground transition-colors">
+                  Quota Calculator
+                </a>
+              </li>
+              <li>
+                <a href="#trust" className="hover:text-foreground transition-colors">
+                  Why Us
+                </a>
+              </li>
+            </ul>
+          </div>
         </div>
-        <p>
+        <div className="mt-8 pt-6 border-t text-center text-xs text-muted-foreground">
           &copy; {new Date().getFullYear()} QuotaCalc. All rights reserved.
-        </p>
+        </div>
       </div>
     </footer>
   );
