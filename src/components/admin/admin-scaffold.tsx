@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowLeft, RefreshCw } from "lucide-react";
+import { ArrowLeft, PanelLeftClose, PanelLeftOpen, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -31,6 +31,7 @@ export function AdminScaffold({
   const [authed, setAuthed] = useState(false);
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     async function checkSession() {
@@ -44,6 +45,15 @@ export function AdminScaffold({
     }
     checkSession();
   }, []);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("admin_sidebar_collapsed");
+    if (saved === "1") setSidebarCollapsed(true);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("admin_sidebar_collapsed", sidebarCollapsed ? "1" : "0");
+  }, [sidebarCollapsed]);
 
   if (checking) {
     return (
@@ -132,11 +142,36 @@ export function AdminScaffold({
       </header>
 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-        <div className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+        <div
+          className={cn(
+            "grid gap-6",
+            sidebarCollapsed
+              ? "lg:grid-cols-[72px_minmax(0,1fr)]"
+              : "lg:grid-cols-[220px_minmax(0,1fr)]"
+          )}
+        >
           <aside className="hidden lg:block">
             <Card className="sticky top-20">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Navigation</CardTitle>
+                <div className="flex items-center justify-between gap-2">
+                  {!sidebarCollapsed ? (
+                    <CardTitle className="text-sm">Navigation</CardTitle>
+                  ) : (
+                    <CardTitle className="text-sm">Nav</CardTitle>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => setSidebarCollapsed((v) => !v)}
+                  >
+                    {sidebarCollapsed ? (
+                      <PanelLeftOpen className="h-4 w-4" />
+                    ) : (
+                      <PanelLeftClose className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="space-y-2">
                 {navItems.map((item) => (
@@ -147,10 +182,12 @@ export function AdminScaffold({
                       "block rounded-md border px-3 py-2 text-xs",
                       pathname === item.href
                         ? "bg-muted border-foreground/20 font-medium"
-                        : "hover:bg-muted/40"
+                        : "hover:bg-muted/40",
+                      sidebarCollapsed && "px-2 text-center"
                     )}
+                    title={item.label}
                   >
-                    {item.label}
+                    {sidebarCollapsed ? item.label.charAt(0) : item.label}
                   </Link>
                 ))}
               </CardContent>
