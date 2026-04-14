@@ -41,3 +41,31 @@ export async function updateLeadStatus(id: string, status: string) {
 
   return { success: true };
 }
+
+export async function updateLeadFollowUp(
+  id: string,
+  payload: { owner?: string; notes?: string; markContactedNow?: boolean }
+) {
+  const isAuthed = await ensureAdminSession();
+  if (!isAuthed) return { success: false };
+
+  const updateData: Record<string, unknown> = {};
+  if (typeof payload.owner === "string") {
+    updateData.owner = payload.owner.trim() || null;
+  }
+  if (typeof payload.notes === "string") {
+    updateData.notes = payload.notes.trim() || null;
+  }
+  if (payload.markContactedNow) {
+    updateData.last_contacted_at = new Date().toISOString();
+  }
+
+  const { error } = await supabase.from("leads").update(updateData).eq("id", id);
+
+  if (error) {
+    console.error("Failed to update lead follow-up:", error);
+    return { success: false };
+  }
+
+  return { success: true };
+}

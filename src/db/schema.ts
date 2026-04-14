@@ -3,6 +3,7 @@ import {
   uuid,
   bigint,
   varchar,
+  text,
   jsonb,
   integer,
   timestamp,
@@ -19,6 +20,9 @@ export const leads = pgTable("leads", {
   whatsapp: varchar("whatsapp", { length: 30 }).notNull(),
   deviceId: varchar("device_id", { length: 100 }),
   userAgent: varchar("user_agent", { length: 2048 }),
+  owner: varchar("owner", { length: 120 }),
+  notes: text("notes"),
+  lastContactedAt: timestamp("last_contacted_at"),
   status: varchar("status", { length: 30 }).default("new").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

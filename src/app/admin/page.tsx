@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { getLeads, updateLeadStatus } from "./actions";
+import { getLeads, updateLeadFollowUp, updateLeadStatus } from "./actions";
 
 type Lead = {
   id: string;
@@ -33,6 +33,9 @@ type Lead = {
   whatsapp: string;
   device_id: string | null;
   user_agent: string | null;
+  owner: string | null;
+  notes: string | null;
+  last_contacted_at: string | null;
   status: string;
   created_at: string;
 };
@@ -118,6 +121,23 @@ export default function AdminPage() {
     await updateLeadStatus(id, status);
     setLeads((prev) =>
       prev.map((l) => (l.id === id ? { ...l, status } : l))
+    );
+  }
+
+  async function handleFollowUpSave(id: string, owner: string, notes: string) {
+    const ok = await updateLeadFollowUp(id, { owner, notes });
+    if (!ok.success) return;
+    setLeads((prev) =>
+      prev.map((l) => (l.id === id ? { ...l, owner, notes } : l))
+    );
+  }
+
+  async function handleMarkContactedNow(id: string) {
+    const ok = await updateLeadFollowUp(id, { markContactedNow: true });
+    if (!ok.success) return;
+    const now = new Date().toISOString();
+    setLeads((prev) =>
+      prev.map((l) => (l.id === id ? { ...l, last_contacted_at: now } : l))
     );
   }
 
@@ -320,6 +340,9 @@ export default function AdminPage() {
                   <th className="text-left font-medium px-4 py-3">WhatsApp</th>
                   <th className="text-left font-medium px-4 py-3">Device</th>
                   <th className="text-left font-medium px-4 py-3">Device ID</th>
+                  <th className="text-left font-medium px-4 py-3">Owner</th>
+                  <th className="text-left font-medium px-4 py-3">Notes</th>
+                  <th className="text-left font-medium px-4 py-3">Last Contacted</th>
                   <th className="text-left font-medium px-4 py-3">Status</th>
                   <th className="text-left font-medium px-4 py-3">Date</th>
                 </tr>
@@ -327,13 +350,13 @@ export default function AdminPage() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={10} className="text-center py-12 text-muted-foreground">
+                    <td colSpan={13} className="text-center py-12 text-muted-foreground">
                       Loading...
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="text-center py-12 text-muted-foreground">
+                    <td colSpan={13} className="text-center py-12 text-muted-foreground">
                       No leads found
                     </td>
                   </tr>
@@ -365,6 +388,56 @@ export default function AdminPage() {
                       </td>
                       <td className="px-4 py-3 text-xs font-mono text-muted-foreground max-w-[180px] truncate">
                         {lead.device_id ?? "—"}
+                      </td>
+                      <td className="px-4 py-3 min-w-[140px]">
+                        <Input
+                          defaultValue={lead.owner ?? ""}
+                          placeholder="Assign owner"
+                          className="h-8 text-xs"
+                          onBlur={(e) =>
+                            handleFollowUpSave(
+                              lead.id,
+                              e.currentTarget.value,
+                              lead.notes ?? ""
+                            )
+                          }
+                        />
+                      </td>
+                      <td className="px-4 py-3 min-w-[200px]">
+                        <Input
+                          defaultValue={lead.notes ?? ""}
+                          placeholder="Add note..."
+                          className="h-8 text-xs"
+                          onBlur={(e) =>
+                            handleFollowUpSave(
+                              lead.id,
+                              lead.owner ?? "",
+                              e.currentTarget.value
+                            )
+                          }
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground min-w-[170px]">
+                        <div className="space-y-1">
+                          <div>
+                            {lead.last_contacted_at
+                              ? new Date(lead.last_contacted_at).toLocaleString("en-MY", {
+                                  day: "2-digit",
+                                  month: "short",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                              : "—"}
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 px-2 text-[10px]"
+                            onClick={() => handleMarkContactedNow(lead.id)}
+                          >
+                            Mark now
+                          </Button>
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <Select
