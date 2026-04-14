@@ -1,0 +1,23 @@
+import {
+  pgTable,
+  uuid,
+  varchar,
+  jsonb,
+  integer,
+  timestamp,
+} from "drizzle-orm/pg-core";
+
+export const leads = pgTable("leads", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  industry: varchar("industry", { length: 50 }).notNull(),
+  calculationData: jsonb("calculation_data").notNull(),
+  estimatedQuota: integer("estimated_quota").notNull(),
+  companyName: varchar("company_name", { length: 255 }).notNull(),
+  contactPerson: varchar("contact_person", { length: 255 }).notNull(),
+  whatsapp: varchar("whatsapp", { length: 30 }).notNull(),
+  status: varchar("status", { length: 30 }).default("new").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type Lead = typeof leads.$inferSelect;
+export type NewLead = typeof leads.$inferInsert;
