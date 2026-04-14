@@ -8,6 +8,7 @@ import {
   Filter,
   RefreshCw,
   ArrowLeft,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -78,6 +79,19 @@ function parseDeviceType(userAgent: string | null): string {
     return "Linux";
   }
   return "Other";
+}
+
+function toPercent(numerator: number, denominator: number) {
+  if (!denominator) return "0%";
+  return `${Math.round((numerator / denominator) * 100)}%`;
+}
+
+function csvEscape(value: string | number | null | undefined) {
+  const v = String(value ?? "");
+  if (v.includes(",") || v.includes("\"") || v.includes("\n")) {
+    return `"${v.replaceAll("\"", "\"\"")}"`;
+  }
+  return v;
 }
 
 export default function AdminPage() {
@@ -216,6 +230,60 @@ export default function AdminPage() {
     Object.entries(industryCount).sort(([, a], [, b]) => b - a)[0]?.[0] ||
     "—";
 
+  const newCount = filtered.filter((l) => l.status === "new").length;
+  const contactedCount = filtered.filter((l) => l.status === "contacted").length;
+  const convertedCount = filtered.filter((l) => l.status === "converted").length;
+  const closedCount = filtered.filter((l) => l.status === "closed").length;
+
+  function handleExportCsv() {
+    const headers = [
+      "lead_no",
+      "company_name",
+      "contact_person",
+      "industry",
+      "estimated_quota",
+      "whatsapp",
+      "device_type",
+      "device_id",
+      "owner",
+      "notes",
+      "last_contacted_at",
+      "status",
+      "created_at",
+    ];
+
+    const rows = filtered.map((l) => [
+      l.lead_no,
+      l.company_name,
+      l.contact_person,
+      l.industry,
+      l.estimated_quota,
+      l.whatsapp,
+      parseDeviceType(l.user_agent),
+      l.device_id,
+      l.owner,
+      l.notes,
+      l.last_contacted_at,
+      l.status,
+      l.created_at,
+    ]);
+
+    const csv = [
+      headers.join(","),
+      ...rows.map((row) => row.map((cell) => csvEscape(cell)).join(",")),
+    ].join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `leads_export_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-md">
@@ -286,6 +354,42 @@ export default function AdminPage() {
           </Card>
         </div>
 
+        {/* Funnel */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <Card>
+            <CardContent className="pt-4 pb-4">
+              <p className="text-xs text-muted-foreground">New</p>
+              <p className="text-xl font-semibold tabular-nums">{newCount}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-4">
+              <p className="text-xs text-muted-foreground">Contacted</p>
+              <p className="text-xl font-semibold tabular-nums">{contactedCount}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-4">
+              <p className="text-xs text-muted-foreground">Converted</p>
+              <p className="text-xl font-semibold tabular-nums">{convertedCount}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-4">
+              <p className="text-xs text-muted-foreground">Closed</p>
+              <p className="text-xl font-semibold tabular-nums">{closedCount}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-4">
+              <p className="text-xs text-muted-foreground">Conv. Rate</p>
+              <p className="text-xl font-semibold tabular-nums">
+                {toPercent(convertedCount, filtered.length)}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Filters */}
         <div className="flex items-center gap-3">
           <Filter className="h-4 w-4 text-muted-foreground" />
@@ -321,6 +425,16 @@ export default function AdminPage() {
             placeholder="Search company, contact, phone, device..."
             className="h-8 max-w-xs"
           />
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8"
+            onClick={handleExportCsv}
+            disabled={filtered.length === 0}
+          >
+            <Download className="mr-1.5 h-3.5 w-3.5" />
+            Export CSV
+          </Button>
           <span className="text-xs text-muted-foreground">
             {filtered.length} result{filtered.length !== 1 && "s"}
           </span>
