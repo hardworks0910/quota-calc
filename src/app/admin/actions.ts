@@ -133,3 +133,32 @@ export async function getLeadEvents(limit = 20) {
   }
   return data ?? [];
 }
+
+export async function getAdminNavSummary() {
+  const isAuthed = await ensureAdminSession();
+  if (!isAuthed) return { leadCount: 0, todayEventCount: 0 };
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const [{ count: leadCount, error: leadsError }, { count: todayEventCount, error: eventsError }] =
+    await Promise.all([
+      supabase.from("leads").select("id", { count: "exact", head: true }),
+      supabase
+        .from("lead_events")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", todayStart.toISOString()),
+    ]);
+
+  if (leadsError) {
+    console.error("Failed to fetch lead count:", leadsError);
+  }
+  if (eventsError) {
+    console.error("Failed to fetch today event count:", eventsError);
+  }
+
+  return {
+    leadCount: leadCount ?? 0,
+    todayEventCount: todayEventCount ?? 0,
+  };
+}

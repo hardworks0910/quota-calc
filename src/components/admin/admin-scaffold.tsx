@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { getAdminNavSummary } from "@/app/admin/actions";
 
 type AdminScaffoldProps = {
   title: string;
@@ -23,8 +24,8 @@ type AdminScaffoldProps = {
 };
 
 const navItems = [
-  { href: "/admin/leads", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/activity", label: "Activity", icon: Activity },
+  { key: "dashboard", href: "/admin/leads", label: "Dashboard", icon: LayoutDashboard },
+  { key: "activity", href: "/admin/activity", label: "Activity", icon: Activity },
 ];
 
 export function AdminScaffold({
@@ -39,6 +40,7 @@ export function AdminScaffold({
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [navSummary, setNavSummary] = useState({ leadCount: 0, todayEventCount: 0 });
 
   useEffect(() => {
     async function checkSession() {
@@ -61,6 +63,13 @@ export function AdminScaffold({
   useEffect(() => {
     localStorage.setItem("admin_sidebar_collapsed", sidebarCollapsed ? "1" : "0");
   }, [sidebarCollapsed]);
+
+  useEffect(() => {
+    if (!authed) return;
+    getAdminNavSummary().then(setNavSummary).catch(() => {
+      setNavSummary({ leadCount: 0, todayEventCount: 0 });
+    });
+  }, [authed, pathname]);
 
   if (checking) {
     return (
@@ -185,6 +194,12 @@ export function AdminScaffold({
               </CardHeader>
               <CardContent className="space-y-2">
                 {navItems.map((item) => (
+                  (() => {
+                    const badgeCount =
+                      item.key === "dashboard"
+                        ? navSummary.leadCount
+                        : navSummary.todayEventCount;
+                    return (
                   <Link
                     key={item.href}
                     href={item.href}
@@ -204,12 +219,23 @@ export function AdminScaffold({
                     ) : null}
                     <item.icon className="h-4 w-4 shrink-0" />
                     {!sidebarCollapsed ? item.label : null}
+                    {!sidebarCollapsed ? (
+                      <span className="ml-auto rounded bg-muted px-1.5 py-0.5 text-[10px] tabular-nums text-muted-foreground">
+                        {badgeCount}
+                      </span>
+                    ) : (
+                      <span className="absolute -right-1 -top-1 rounded bg-foreground px-1 text-[9px] leading-4 text-background">
+                        {badgeCount}
+                      </span>
+                    )}
                     {sidebarCollapsed ? (
                       <span className="pointer-events-none absolute left-full top-1/2 ml-2 -translate-y-1/2 whitespace-nowrap rounded-md border bg-background px-2 py-1 text-[11px] opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
                         {item.label}
                       </span>
                     ) : null}
                   </Link>
+                    );
+                  })()
                 ))}
               </CardContent>
             </Card>
