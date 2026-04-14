@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { leadSchema } from "@/lib/schemas";
 import type { IndustryId } from "@/lib/schemas";
+import { sendTelegramLeadNotification } from "@/lib/notifications";
 
 type SubmitLeadPayload = {
   industry: IndustryId;
@@ -67,6 +68,15 @@ export async function submitLead(payload: SubmitLeadPayload) {
         error: { _form: [error.message] },
       };
     }
+
+    // Best-effort notification; lead insert remains source of truth.
+    void sendTelegramLeadNotification({
+      industry: payload.industry,
+      estimatedQuota: payload.estimatedQuota,
+      companyName: parsed.data.companyName,
+      contactPerson: parsed.data.contactPerson,
+      whatsapp: parsed.data.whatsapp,
+    });
 
     return { success: true as const };
   } catch (e) {
