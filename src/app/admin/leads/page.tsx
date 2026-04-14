@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Download, Filter } from "lucide-react";
+import { Clock, Download, Filter, TrendingUp, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -64,6 +65,11 @@ function csvEscape(value: string | number | null | undefined) {
   const v = String(value ?? "");
   if (v.includes(",") || v.includes("\"") || v.includes("\n")) return `"${v.replaceAll("\"", "\"\"")}"`;
   return v;
+}
+
+function toPercent(numerator: number, denominator: number) {
+  if (!denominator) return "0%";
+  return `${Math.round((numerator / denominator) * 100)}%`;
 }
 
 export default function AdminLeadsPage() {
@@ -137,6 +143,19 @@ export default function AdminLeadsPage() {
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const start = (safeCurrentPage - 1) * pageSize;
   const pagedRows = filtered.slice(start, start + pageSize);
+  const totalLeads = leads.length;
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const weeklyLeads = leads.filter((l) => new Date(l.created_at) >= weekAgo).length;
+  const industryCount: Record<string, number> = {};
+  leads.forEach((l) => {
+    industryCount[l.industry] = (industryCount[l.industry] || 0) + 1;
+  });
+  const topIndustry =
+    Object.entries(industryCount).sort(([, a], [, b]) => b - a)[0]?.[0] || "—";
+  const newCount = leads.filter((l) => l.status === "new").length;
+  const contactedCount = leads.filter((l) => l.status === "contacted").length;
+  const convertedCount = leads.filter((l) => l.status === "converted").length;
+  const closedCount = leads.filter((l) => l.status === "closed").length;
 
   async function handleStatusChange(id: string, status: string) {
     await updateLeadStatus(id, status);
@@ -198,7 +217,80 @@ export default function AdminLeadsPage() {
   }
 
   return (
-    <AdminScaffold title="Lead Dashboard - Leads" onRefresh={() => fetchLeads(true)} refreshing={loading}>
+    <AdminScaffold title="Lead Dashboard" onRefresh={() => fetchLeads(true)} refreshing={loading}>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="text-2xl font-bold tabular-nums">{totalLeads}</p>
+                <p className="text-xs text-muted-foreground">Total Leads</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="text-2xl font-bold tabular-nums">{weeklyLeads}</p>
+                <p className="text-xs text-muted-foreground">This Week</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="text-2xl font-bold">
+                  {industryLabels[topIndustry] || topIndustry}
+                </p>
+                <p className="text-xs text-muted-foreground">Top Industry</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+        <Card>
+          <CardContent className="pt-4 pb-4">
+            <p className="text-xs text-muted-foreground">New</p>
+            <p className="text-xl font-semibold tabular-nums">{newCount}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-4">
+            <p className="text-xs text-muted-foreground">Contacted</p>
+            <p className="text-xl font-semibold tabular-nums">{contactedCount}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-4">
+            <p className="text-xs text-muted-foreground">Converted</p>
+            <p className="text-xl font-semibold tabular-nums">{convertedCount}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-4">
+            <p className="text-xs text-muted-foreground">Closed</p>
+            <p className="text-xl font-semibold tabular-nums">{closedCount}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-4">
+            <p className="text-xs text-muted-foreground">Conv. Rate</p>
+            <p className="text-xl font-semibold tabular-nums">
+              {toPercent(convertedCount, totalLeads)}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
       <div className="flex items-center gap-3">
         <Filter className="h-4 w-4 text-muted-foreground" />
         <Select value={filterIndustry} onValueChange={setFilterIndustry}>

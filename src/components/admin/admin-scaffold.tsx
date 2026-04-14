@@ -16,8 +16,7 @@ type AdminScaffoldProps = {
 };
 
 const navItems = [
-  { href: "/admin/overview", label: "Overview" },
-  { href: "/admin/leads", label: "Leads" },
+  { href: "/admin/leads", label: "Dashboard" },
   { href: "/admin/activity", label: "Activity" },
 ];
 
