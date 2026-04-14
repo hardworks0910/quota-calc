@@ -103,6 +103,8 @@ export default function AdminPage() {
   const [filterIndustry, setFilterIndustry] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
 
   const fetchLeads = useCallback(async () => {
     setLoading(true);
@@ -215,6 +217,9 @@ export default function AdminPage() {
       (l.device_id ?? "").toLowerCase().includes(normalizedQuery)
     );
   });
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const start = (currentPage - 1) * pageSize;
+  const pagedRows = filtered.slice(start, start + pageSize);
 
   const totalLeads = leads.length;
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -229,6 +234,16 @@ export default function AdminPage() {
   const topIndustry =
     Object.entries(industryCount).sort(([, a], [, b]) => b - a)[0]?.[0] ||
     "—";
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterIndustry, filterStatus, searchQuery]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const newCount = filtered.filter((l) => l.status === "new").length;
   const contactedCount = filtered.filter((l) => l.status === "contacted").length;
@@ -442,10 +457,10 @@ export default function AdminPage() {
 
         {/* Table */}
         <div className="rounded-lg border overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="max-h-[70vh] overflow-auto">
             <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/50">
+              <thead className="sticky top-0 z-10 bg-background">
+                <tr className="border-b bg-muted/95 backdrop-blur">
                   <th className="text-left font-medium px-4 py-3">No.</th>
                   <th className="text-left font-medium px-4 py-3">Company</th>
                   <th className="text-left font-medium px-4 py-3">Contact</th>
@@ -475,7 +490,7 @@ export default function AdminPage() {
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((lead) => (
+                  pagedRows.map((lead) => (
                     <tr key={lead.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                       <td className="px-4 py-3 tabular-nums font-semibold">
                         {lead.lead_no}
@@ -590,6 +605,35 @@ export default function AdminPage() {
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted-foreground">
+            Showing {filtered.length === 0 ? 0 : start + 1}-
+            {Math.min(start + pageSize, filtered.length)} of {filtered.length}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              Prev
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              Page {currentPage} / {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setCurrentPage((p) => Math.min(totalPages, p + 1))
+              }
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </Button>
           </div>
         </div>
       </main>
