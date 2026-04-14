@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   Users,
   TrendingUp,
@@ -105,6 +105,13 @@ export default function AdminPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
+  const [drafts, setDrafts] = useState<
+    Record<string, { owner: string; notes: string }>
+  >({});
+  const [saveState, setSaveState] = useState<
+    Record<string, "idle" | "saving" | "saved" | "error">
+  >({});
+  const saveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   const fetchLeads = useCallback(async () => {
     setLoading(true);
@@ -128,6 +135,27 @@ export default function AdminPage() {
     }
     checkSession();
   }, [fetchLeads]);
+
+  useEffect(() => {
+    setDrafts((prev) => {
+      const next = { ...prev };
+      for (const lead of leads) {
+        if (!next[lead.id]) {
+          next[lead.id] = {
+            owner: lead.owner ?? "",
+            notes: lead.notes ?? "",
+          };
+        }
+      }
+      return next;
+    });
+  }, [leads]);
+
+  useEffect(() => {
+    return () => {
+      Object.values(saveTimers.current).forEach((timer) => clearTimeout(timer));
+    };
+  }, []);
 
   useEffect(() => {
     if (authed) fetchLeads();
@@ -159,6 +187,47 @@ export default function AdminPage() {
     setLeads((prev) =>
       prev.map((l) => (l.id === id ? { ...l, last_contacted_at: now } : l))
     );
+  }
+
+  function queueAutoSave(id: string, nextDraft: { owner: string; notes: string }) {
+    if (saveTimers.current[id]) {
+      clearTimeout(saveTimers.current[id]);
+    }
+    saveTimers.current[id] = setTimeout(async () => {
+      setSaveState((prev) => ({ ...prev, [id]: "saving" }));
+      const ok = await updateLeadFollowUp(id, nextDraft);
+      if (!ok.success) {
+        setSaveState((prev) => ({ ...prev, [id]: "error" }));
+        return;
+      }
+      setLeads((prev) =>
+        prev.map((l) =>
+          l.id === id
+            ? { ...l, owner: nextDraft.owner || null, notes: nextDraft.notes || null }
+            : l
+        )
+      );
+      setSaveState((prev) => ({ ...prev, [id]: "saved" }));
+      setTimeout(() => {
+        setSaveState((prev) => ({ ...prev, [id]: "idle" }));
+      }, 1200);
+    }, 700);
+  }
+
+  function handleDraftChange(
+    id: string,
+    field: "owner" | "notes",
+    value: string
+  ) {
+    setDrafts((prev) => {
+      const current = prev[id] ?? { owner: "", notes: "" };
+      const nextDraft = {
+        ...current,
+        [field]: value,
+      };
+      queueAutoSave(id, nextDraft);
+      return { ...prev, [id]: nextDraft };
+    });
   }
 
   if (!authed) {
@@ -515,29 +584,26 @@ export default function AdminPage() {
                       </td>
                       <td className="px-4 py-3 min-w-[140px]">
                         <Input
-                          defaultValue={lead.owner ?? ""}
+                          value={drafts[lead.id]?.owner ?? lead.owner ?? ""}
                           placeholder="Assign owner"
                           className="h-8 text-xs"
-                          onBlur={(e) =>
-                            handleFollowUpSave(
-                              lead.id,
-                              e.currentTarget.value,
-                              lead.notes ?? ""
-                            )
+                          onChange={(e) =>
+                            handleDraftChange(lead.id, "owner", e.currentTarget.value)
                           }
                         />
+                        <p className="mt-1 text-[10px] text-muted-foreground">
+                          {saveState[lead.id] === "saving" && "Saving..."}
+                          {saveState[lead.id] === "saved" && "Saved"}
+                          {saveState[lead.id] === "error" && "Save failed"}
+                        </p>
                       </td>
                       <td className="px-4 py-3 min-w-[200px]">
                         <Input
-                          defaultValue={lead.notes ?? ""}
+                          value={drafts[lead.id]?.notes ?? lead.notes ?? ""}
                           placeholder="Add note..."
                           className="h-8 text-xs"
-                          onBlur={(e) =>
-                            handleFollowUpSave(
-                              lead.id,
-                              lead.owner ?? "",
-                              e.currentTarget.value
-                            )
+                          onChange={(e) =>
+                            handleDraftChange(lead.id, "notes", e.currentTarget.value)
                           }
                         />
                       </td>
