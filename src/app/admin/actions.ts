@@ -1,8 +1,17 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { supabase } from "@/db";
 
+async function ensureAdminSession() {
+  const cookieStore = await cookies();
+  return cookieStore.get("admin_session")?.value === "1";
+}
+
 export async function getLeads() {
+  const isAuthed = await ensureAdminSession();
+  if (!isAuthed) return [];
+
   const { data, error } = await supabase
     .from("leads")
     .select("*")
@@ -17,6 +26,9 @@ export async function getLeads() {
 }
 
 export async function updateLeadStatus(id: string, status: string) {
+  const isAuthed = await ensureAdminSession();
+  if (!isAuthed) return { success: false };
+
   const { error } = await supabase
     .from("leads")
     .update({ status })

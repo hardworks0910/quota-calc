@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { getLeads, updateLeadStatus } from "./actions";
 
@@ -81,7 +82,10 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [authed, setAuthed] = useState(false);
   const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState<string>("");
   const [filterIndustry, setFilterIndustry] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const fetchLeads = useCallback(async () => {
     setLoading(true);
@@ -89,6 +93,22 @@ export default function AdminPage() {
     setLeads(data);
     setLoading(false);
   }, []);
+
+  useEffect(() => {
+    async function checkSession() {
+      try {
+        const res = await fetch("/api/admin/session", { cache: "no-store" });
+        const data = (await res.json()) as { authed?: boolean };
+        if (data.authed) {
+          setAuthed(true);
+          fetchLeads();
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+    checkSession();
+  }, [fetchLeads]);
 
   useEffect(() => {
     if (authed) fetchLeads();
@@ -110,9 +130,22 @@ export default function AdminPage() {
           </CardHeader>
           <CardContent>
             <form
-              onSubmit={(e) => {
+              onSubmit={async (e) => {
                 e.preventDefault();
-                if (password === "admin2026") setAuthed(true);
+                setLoginError("");
+                const res = await fetch("/api/admin/login", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ password }),
+                });
+                const data = (await res.json()) as { success?: boolean; message?: string };
+                if (res.ok && data.success) {
+                  setAuthed(true);
+                  setPassword("");
+                  fetchLeads();
+                } else {
+                  setLoginError(data.message || "Login failed");
+                }
               }}
               className="space-y-3"
             >
@@ -126,6 +159,9 @@ export default function AdminPage() {
               <Button type="submit" className="w-full">
                 Login
               </Button>
+              {loginError ? (
+                <p className="text-xs text-destructive">{loginError}</p>
+              ) : null}
             </form>
           </CardContent>
         </Card>
@@ -133,10 +169,18 @@ export default function AdminPage() {
     );
   }
 
-  const filtered =
-    filterIndustry === "all"
-      ? leads
-      : leads.filter((l) => l.industry === filterIndustry);
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filtered = leads.filter((l) => {
+    if (filterIndustry !== "all" && l.industry !== filterIndustry) return false;
+    if (filterStatus !== "all" && l.status !== filterStatus) return false;
+    if (!normalizedQuery) return true;
+    return (
+      l.company_name.toLowerCase().includes(normalizedQuery) ||
+      l.contact_person.toLowerCase().includes(normalizedQuery) ||
+      l.whatsapp.toLowerCase().includes(normalizedQuery) ||
+      (l.device_id ?? "").toLowerCase().includes(normalizedQuery)
+    );
+  });
 
   const totalLeads = leads.length;
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -238,6 +282,25 @@ export default function AdminPage() {
               <SelectItem value="cleaning">Cleaning</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-40" size="sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              {statusOptions.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {s.charAt(0).toUpperCase() + s.slice(1)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search company, contact, phone, device..."
+            className="h-8 max-w-xs"
+          />
           <span className="text-xs text-muted-foreground">
             {filtered.length} result{filtered.length !== 1 && "s"}
           </span>

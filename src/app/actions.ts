@@ -29,6 +29,25 @@ export async function submitLead(payload: SubmitLeadPayload) {
     const { supabase } = await import("@/db");
     const ua = (await headers()).get("user-agent");
 
+    if (payload.deviceId) {
+      const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
+      const { data: recentRows, error: recentError } = await supabase
+        .from("leads")
+        .select("id")
+        .eq("device_id", payload.deviceId)
+        .gte("created_at", oneMinuteAgo)
+        .limit(1);
+
+      if (recentError) {
+        console.error("Supabase anti-spam check error:", recentError);
+      } else if ((recentRows?.length ?? 0) > 0) {
+        return {
+          success: false as const,
+          error: { _form: ["Please wait 60 seconds before submitting again."] },
+        };
+      }
+    }
+
     const { error } = await supabase.from("leads").insert({
       industry: payload.industry,
       calculation_data: payload.calculationData,
