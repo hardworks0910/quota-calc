@@ -109,6 +109,33 @@ function csvEscape(value: string | number | null | undefined) {
   return v;
 }
 
+function getEventTypeLabel(type: string) {
+  if (type === "lead_created") return "线索创建";
+  if (type === "status_changed") return "状态变更";
+  if (type === "followup_updated") return "跟进更新";
+  return type;
+}
+
+function formatEventDetail(detail: string | null) {
+  if (!detail) return "无详情";
+  let text = detail;
+  text = text.replace(
+    /status:\s*([a-z_]+)\s*->\s*([a-z_]+)/i,
+    (_, from: string, to: string) => `状态：${from} -> ${to}`
+  );
+  text = text.replace(
+    /owner updated to "([^"]*)"/i,
+    (_, owner: string) => `负责人已更新为 "${owner}"`
+  );
+  text = text.replace(
+    /notes updated to "([^"]*)"/i,
+    (_, note: string) => `备注已更新为 "${note}"`
+  );
+  text = text.replace(/marked as contacted now/i, "已标记为刚刚联系");
+  text = text.replace(/lead created from landing page form/i, "来自落地页表单的新线索");
+  return text;
+}
+
 export default function AdminPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
@@ -780,9 +807,9 @@ export default function AdminPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Events</SelectItem>
-                    <SelectItem value="lead_created">Lead Created</SelectItem>
-                    <SelectItem value="status_changed">Status Changed</SelectItem>
-                    <SelectItem value="followup_updated">Follow-up Updated</SelectItem>
+                    <SelectItem value="lead_created">线索创建</SelectItem>
+                    <SelectItem value="status_changed">状态变更</SelectItem>
+                    <SelectItem value="followup_updated">跟进更新</SelectItem>
                   </SelectContent>
                 </Select>
                 {selectedLeadId ? (
@@ -806,7 +833,7 @@ export default function AdminPage() {
                 <div key={e.id} className="rounded-md border p-3 text-sm">
                   <div className="flex items-center justify-between gap-3">
                     <p className="font-medium">
-                      Lead #{e.lead_no ?? "?"} - {e.event_type}
+                      线索 #{e.lead_no ?? "?"} - {getEventTypeLabel(e.event_type)}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {new Date(e.created_at).toLocaleString("en-MY", {
@@ -818,7 +845,7 @@ export default function AdminPage() {
                     </p>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {e.event_detail ?? "No detail"} by {e.actor ?? "system"}
+                    {formatEventDetail(e.event_detail)} · 操作人：{e.actor ?? "system"}
                   </p>
                 </div>
               ))
