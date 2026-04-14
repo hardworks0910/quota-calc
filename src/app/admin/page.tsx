@@ -431,7 +431,59 @@ export default function AdminPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 sm:px-6 py-8 space-y-6">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8">
+        <div className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+          <aside className="hidden lg:block">
+            <Card className="sticky top-20">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm">Navigation</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <a
+                  href="#overview"
+                  className="block rounded-md border px-3 py-2 text-xs hover:bg-muted/40"
+                >
+                  Overview
+                </a>
+                <a
+                  href="#leads"
+                  className="block rounded-md border px-3 py-2 text-xs hover:bg-muted/40"
+                >
+                  Leads Table
+                </a>
+                <a
+                  href="#activity"
+                  className="block rounded-md border px-3 py-2 text-xs hover:bg-muted/40"
+                >
+                  Activity Timeline
+                </a>
+              </CardContent>
+            </Card>
+          </aside>
+
+          <main className="space-y-6">
+            <div className="flex items-center gap-2 lg:hidden">
+              <a
+                href="#overview"
+                className="rounded-md border px-2.5 py-1.5 text-xs hover:bg-muted/40"
+              >
+                Overview
+              </a>
+              <a
+                href="#leads"
+                className="rounded-md border px-2.5 py-1.5 text-xs hover:bg-muted/40"
+              >
+                Leads
+              </a>
+              <a
+                href="#activity"
+                className="rounded-md border px-2.5 py-1.5 text-xs hover:bg-muted/40"
+              >
+                Activity
+              </a>
+            </div>
+
+        <section id="overview" className="scroll-mt-24 space-y-6">
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card>
@@ -510,7 +562,9 @@ export default function AdminPage() {
             </CardContent>
           </Card>
         </div>
+        </section>
 
+        <section id="leads" className="scroll-mt-24 space-y-4">
         {/* Filters */}
         <div className="flex items-center gap-3">
           <Filter className="h-4 w-4 text-muted-foreground" />
@@ -765,7 +819,9 @@ export default function AdminPage() {
             </Button>
           </div>
         </div>
+        </section>
 
+        <section id="activity" className="scroll-mt-24">
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -825,7 +881,10 @@ export default function AdminPage() {
             )}
           </CardContent>
         </Card>
+        </section>
       </main>
+        </div>
+      </div>
     </div>
   );
 }
