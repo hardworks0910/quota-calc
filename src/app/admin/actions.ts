@@ -95,7 +95,7 @@ export async function updateLeadFollowUp(
     details.push(`owner updated to "${payload.owner.trim() || "unassigned"}"`);
   }
   if (typeof payload.notes === "string" && payload.notes.trim() !== (before?.notes ?? "")) {
-    details.push("notes updated");
+    details.push(`notes updated to "${payload.notes.trim() || "(empty)"}"`);
   }
   if (payload.markContactedNow) {
     details.push("marked as contacted now");
