@@ -153,7 +153,7 @@ export function AdminScaffold({
           className={cn(
             "grid gap-6",
             sidebarCollapsed
-              ? "lg:grid-cols-[72px_minmax(0,1fr)]"
+              ? "lg:grid-cols-[88px_minmax(0,1fr)]"
               : "lg:grid-cols-[220px_minmax(0,1fr)]"
           )}
         >
@@ -194,7 +194,7 @@ export function AdminScaffold({
                         ? "bg-muted border-foreground/20 font-medium"
                         : "hover:bg-muted/40",
                       sidebarCollapsed
-                        ? "px-0 h-9 flex items-center justify-center"
+                        ? "mx-1 h-9 flex items-center justify-center"
                         : "flex items-center gap-2"
                     )}
                     title={item.label}
