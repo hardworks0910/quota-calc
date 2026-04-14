@@ -123,6 +123,7 @@ export default function AdminPage() {
   const pageSize = 20;
   const [events, setEvents] = useState<LeadEvent[]>([]);
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+  const [eventTypeFilter, setEventTypeFilter] = useState<string>("all");
   const [drafts, setDrafts] = useState<
     Record<string, { owner: string; notes: string }>
   >({});
@@ -344,9 +345,11 @@ export default function AdminPage() {
     new Set(leads.map((l) => (l.owner ?? "").trim()).filter(Boolean))
   ).sort((a, b) => a.localeCompare(b));
   const selectedLead = leads.find((l) => l.id === selectedLeadId) ?? null;
-  const timelineRows = selectedLeadId
-    ? events.filter((e) => e.lead_id === selectedLeadId)
-    : events;
+  const timelineRows = events.filter((e) => {
+    if (selectedLeadId && e.lead_id !== selectedLeadId) return false;
+    if (eventTypeFilter !== "all" && e.event_type !== eventTypeFilter) return false;
+    return true;
+  });
 
   const newCount = filtered.filter((l) => l.status === "new").length;
   const contactedCount = filtered.filter((l) => l.status === "contacted").length;
@@ -765,21 +768,34 @@ export default function AdminPage() {
 
         <Card>
           <CardHeader className="pb-3">
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
               <CardTitle className="text-base">
                 Lead Activity
                 {selectedLead ? ` - #${selectedLead.lead_no}` : ""}
               </CardTitle>
-              {selectedLeadId ? (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 text-xs"
-                  onClick={() => setSelectedLeadId(null)}
-                >
-                  Clear selection
-                </Button>
-              ) : null}
+              <div className="flex items-center gap-2">
+                <Select value={eventTypeFilter} onValueChange={setEventTypeFilter}>
+                  <SelectTrigger className="w-44 h-7 text-xs" size="sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Events</SelectItem>
+                    <SelectItem value="lead_created">Lead Created</SelectItem>
+                    <SelectItem value="status_changed">Status Changed</SelectItem>
+                    <SelectItem value="followup_updated">Follow-up Updated</SelectItem>
+                  </SelectContent>
+                </Select>
+                {selectedLeadId ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs"
+                    onClick={() => setSelectedLeadId(null)}
+                  >
+                    Clear selection
+                  </Button>
+                ) : null}
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-2">
