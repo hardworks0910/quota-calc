@@ -1,6 +1,7 @@
 import {
   pgTable,
   uuid,
+  bigint,
   varchar,
   jsonb,
   integer,
@@ -9,6 +10,7 @@ import {
 
 export const leads = pgTable("leads", {
   id: uuid("id").defaultRandom().primaryKey(),
+  leadNo: bigint("lead_no", { mode: "number" }).notNull().unique(),
   industry: varchar("industry", { length: 50 }).notNull(),
   calculationData: jsonb("calculation_data").notNull(),
   estimatedQuota: integer("estimated_quota").notNull(),

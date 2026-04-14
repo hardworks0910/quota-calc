@@ -23,6 +23,7 @@ import { getLeads, updateLeadStatus } from "./actions";
 
 type Lead = {
   id: string;
+  lead_no: number;
   industry: string;
   calculation_data: Record<string, unknown>;
   estimated_quota: number;
@@ -225,6 +226,7 @@ export default function AdminPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/50">
+                  <th className="text-left font-medium px-4 py-3">No.</th>
                   <th className="text-left font-medium px-4 py-3">Company</th>
                   <th className="text-left font-medium px-4 py-3">Contact</th>
                   <th className="text-left font-medium px-4 py-3">Industry</th>
@@ -237,19 +239,22 @@ export default function AdminPage() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-12 text-muted-foreground">
+                    <td colSpan={8} className="text-center py-12 text-muted-foreground">
                       Loading...
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-12 text-muted-foreground">
+                    <td colSpan={8} className="text-center py-12 text-muted-foreground">
                       No leads found
                     </td>
                   </tr>
                 ) : (
                   filtered.map((lead) => (
                     <tr key={lead.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+                      <td className="px-4 py-3 tabular-nums font-semibold">
+                        {lead.lead_no}
+                      </td>
                       <td className="px-4 py-3 font-medium">
                         {lead.company_name}
                       </td>
